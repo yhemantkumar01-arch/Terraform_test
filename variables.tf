@@ -19,7 +19,7 @@ variable "aws_region" {
 variable "instance_type" {
   description = "EC2 instance type for Minikube"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.small"
   # For heavier workloads you can use t3.large / t3.xlarge
 }
 

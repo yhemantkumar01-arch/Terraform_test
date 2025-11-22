@@ -13,20 +13,13 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Get latest Ubuntu 22.04 LTS AMI
-data "aws_ami" "ubuntu_22_04" {
-  most_recent = true
-
-  owners = ["708467047319"] 
+# Ubuntu 24.04 LTS AMI
+data "aws_ami" "ubuntu_24_04" {
+  owners = ["099720109477"]  # Canonical
 
   filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+    name   = "image-id"
+    values = ["ami-02b8269d5e85954ef"]  # Ubuntu 24.04 LTS (x86_64)
   }
 }
 
@@ -34,9 +27,8 @@ data "aws_ami" "ubuntu_22_04" {
 resource "aws_security_group" "minikube_sg" {
   name        = "${var.project_name}-minikube-sg"
   description = "Security group for Minikube EC2 instance"
-  vpc_id      = var.vpc_id # If you want default VPC, see note below
+  vpc_id      = var.vpc_id
 
-  # SSH
   ingress {
     description = "SSH"
     from_port   = 22
@@ -45,7 +37,6 @@ resource "aws_security_group" "minikube_sg" {
     cidr_blocks = var.allowed_ssh_cidrs
   }
 
-  # HTTP (for apps exposed via NodePort / Ingress)
   ingress {
     description = "HTTP"
     from_port   = 80
@@ -54,7 +45,6 @@ resource "aws_security_group" "minikube_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTPS
   ingress {
     description = "HTTPS"
     from_port   = 443
@@ -63,7 +53,6 @@ resource "aws_security_group" "minikube_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Optional: NodePort range (if you want to access NodePort services directly)
   ingress {
     description = "Kubernetes NodePort range"
     from_port   = 30000
@@ -73,7 +62,6 @@ resource "aws_security_group" "minikube_sg" {
   }
 
   egress {
-    description = "Allow all outbound"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -86,19 +74,9 @@ resource "aws_security_group" "minikube_sg" {
   }
 }
 
-# If you want to use the default VPC instead of passing vpc_id, replace
-# vpc_id = var.vpc_id
-# with:
-#
-# data "aws_vpc" "default" {
-#   default = true
-# }
-#
-# and then:
-# vpc_id = data.aws_vpc.default.id
-
+# EC2 Instance for Minikube
 resource "aws_instance" "minikube" {
-  ami                    = data.aws_ami.ubuntu_22_04.id
+  ami                    = data.aws_ami.ubuntu_24_04.id
   instance_type          = var.instance_type
   key_name               = var.key_name
   subnet_id              = var.subnet_id
@@ -109,7 +87,6 @@ resource "aws_instance" "minikube" {
     volume_type = "gp3"
   }
 
-  # Optional: basic bootstrap things (Ansible will do the heavy stuff)
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
@@ -121,4 +98,3 @@ resource "aws_instance" "minikube" {
     Environment = var.environment
   }
 }
-

@@ -17,7 +17,7 @@ provider "aws" {
 data "aws_ami" "ubuntu_22_04" {
   most_recent = true
 
-  owners = ["099720109477"] # Canonical
+  owners = ["708467047319"] 
 
   filter {
     name   = "name"
@@ -121,3 +121,4 @@ resource "aws_instance" "minikube" {
     Environment = var.environment
   }
 }
+
